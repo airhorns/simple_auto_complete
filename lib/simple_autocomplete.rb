@@ -11,7 +11,7 @@ class ActionController::Base
       condition = methods.map{|m| "LOWER(#{m}) LIKE ?"} * " OR "
       values = methods.map{|m| "%#{params[:q].to_s.downcase}%"}
       conditions = [condition, *values]
-      model = options.delete(:class) || ma,e
+      model = options.delete(:class) || name
       model = model.to_s.camelize.constantize if model.is_a?(Symbol)
       find_options = {
         :conditions => conditions,
