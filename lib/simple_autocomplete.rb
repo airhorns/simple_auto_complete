@@ -4,15 +4,15 @@ end
 
 # see Readme for details
 class ActionController::Base
-  def self.autocomplete_for(object, method, options = {}, &block)
+  def self.autocomplete_for(name, method, options = {}, &block)
     options = options.dup
-    define_method("autocomplete_for_#{object}_#{method}") do
+    define_method("autocomplete_for_#{name}_#{method}") do
       methods = options.delete(:match) || [*method]
       condition = methods.map{|m| "LOWER(#{m}) LIKE ?"} * " OR "
       values = methods.map{|m| "%#{params[:q].to_s.downcase}%"}
       conditions = [condition, *values]
-
-      model = object.to_s.camelize.constantize
+      model = options.delete(:class) || ma,e
+      model = model.to_s.camelize.constantize if model.is_a?(Symbol)
       find_options = {
         :conditions => conditions,
         :order => "#{methods.first} ASC",

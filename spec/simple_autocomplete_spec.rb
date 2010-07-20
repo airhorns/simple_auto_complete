@@ -13,6 +13,24 @@ class UsersController < ActionController::Base
   end
 end
 
+shared_examples_for "controller autocomplete" do
+  it "renders the items inline" do
+    @c.should_receive(:render).with {|hash| hash[:inline] =~ /@items.map \{|item| h(item.name)\}.uniq.join(\'\n\')/}
+    @c.send(@method)
+  end
+  
+  it "orders ASC by name" do
+    User.should_receive(:scoped).with(hash_including(:order => 'name ASC'))
+    @c.send(@method)
+  end
+  
+  it "finds by name" do
+    @c.stub!(:params).and_return :q=>'Hans'
+    User.should_receive(:scoped).with(hash_including(:conditions => ['LOWER(name) LIKE ?','%hans%']))
+    @c.send(@method)
+  end
+end
+
 describe 'Controller extensions' do
   before do
     @c = UsersController.new
@@ -35,23 +53,9 @@ describe 'Controller extensions' do
   describe 'simple autocomplete' do
     before do
       UsersController.autocomplete_for(:user,:name)
+      @method = :autocomplete_for_user_name
     end
-    
-    it "renders the items inline" do
-      @c.should_receive(:render).with {|hash| hash[:inline] =~ /@items.map \{|item| h(item.name)\}.uniq.join(\'\n\')/}
-      @c.autocomplete_for_user_name
-    end
-    
-    it "orders ASC by name" do
-      User.should_receive(:scoped).with(hash_including(:order => 'name ASC'))
-      @c.autocomplete_for_user_name
-    end
-    
-    it "finds by name" do
-      @c.stub!(:params).and_return :q=>'Hans'
-      User.should_receive(:scoped).with(hash_including(:conditions => ['LOWER(name) LIKE ?','%hans%']))
-      @c.autocomplete_for_user_name
-    end
+    it_should_behave_like "controller autocomplete"
   end
 
   describe "autocomplete with :match" do
@@ -115,6 +119,24 @@ describe 'Controller extensions' do
         a_instance_method
       end
       @c.autocomplete_for_user_name
+    end
+  end
+  
+  describe "autocomplete with a name different than the object" do
+    before do
+       @method = :autocomplete_for_special_user_name
+    end
+    describe "using a symbol" do
+      before do
+        UsersController.autocomplete_for(:special_user,:name,:class => :user)
+      end
+      it_should_behave_like "controller autocomplete"
+    end
+    describe "using the class" do
+      before do
+        UsersController.autocomplete_for(:special_user,:name,:class => User)
+      end
+      it_should_behave_like "controller autocomplete"
     end
   end
 end
